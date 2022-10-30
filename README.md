@@ -13,3 +13,12 @@ On macOS or Linux, run:
         % ./build.sh
         % ./build/slope_defense
 
+## Thanks!
+
+This game was built using these amazingly helpful libraries:
+- [exprtk](https://github.com/ArashPartow/exprtk.git)
+- [mahi-gui](https://github.com/mahilab/mahi-gui.git)
+- [Dear ImGui](https://github.com/ocornut/imgui)
+- [ImPlot](https://github.com/epezent/implot)
+- [GLFW](https://www.glfw.org/)
+
