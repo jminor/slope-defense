@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  BUILD_TYPE: Release
+
 jobs:
   Windows:
     runs-on: windows-latest
@@ -34,14 +37,14 @@ jobs:
       run: cmake --build .
 
     - name: Check Product
-      working-directory: ${{github.workspace}}/build/Debug
+      working-directory: ${{github.workspace}}/build/$BUILD_TYPE
       shell: bash
       run: |
         ls -la
         file slope_defense.exe
 
     - name: Package Product
-      working-directory: ${{github.workspace}}/build/Debug
+      working-directory: ${{github.workspace}}/build/$BUILD_TYPE
       run: |
         chmod +x slope_defense.exe
         tar -cvf slope-defense-windows.tar slope_defense.exe
@@ -50,7 +53,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: slope-defense-windows
-        path: build/Debug/slope-defense-windows.tar
+        path: build/$BUILD_TYPE/slope-defense-windows.tar
 
   Linux:
     runs-on: ubuntu-latest
@@ -68,7 +71,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake ..
+        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
         make
 
     - name: Check Product
@@ -100,7 +103,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake ..
+        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
         make
 
     - name: Check Product
