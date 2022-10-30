@@ -7,61 +7,57 @@ on:
     branches: [ main ]
 
 jobs:
-  # Windows:
-  #   runs-on: windows-2019
-  #   env:
-  #     VS_PATH: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\
-  #     MSBUILD_PATH: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\
-  #     # Until gh-actions allow us to use env variables inside other env variables (because we need %GITHUB_WORKSPACE%) we have to use relative path to imgui/examples/example_name directory.
-  #     SDL2_DIR: ..\..\SDL2-devel-2.0.10-VC\SDL2-2.0.10\
-  #     VULKAN_SDK: ..\..\vulkan-sdk-1.1.121.2\
-  #   steps:
-  #     - uses: actions/checkout@v1
-  #       with:
-  #         fetch-depth: 1
+  Windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
 
-  #     - name: Install Dependencies
-  #       shell: powershell
-  #       run: |
-  #         Invoke-WebRequest -Uri "https://www.libsdl.org/release/SDL2-devel-2.0.10-VC.zip" -OutFile "SDL2-devel-2.0.10-VC.zip"
-  #         Expand-Archive -Path SDL2-devel-2.0.10-VC.zip
-  #         Invoke-WebRequest -Uri "https://github.com/ocornut/imgui/files/3789205/vulkan-sdk-1.1.121.2.zip" -OutFile vulkan-sdk-1.1.121.2.zip
-  #         Expand-Archive -Path vulkan-sdk-1.1.121.2.zip
+    - name: Create Build Environment
+      # Some projects don't allow in-source building, so create a separate build directory
+      # We'll use this as our working directory for all subsequent commands
+      run: cmake -E make_directory ${{github.workspace}}/build
 
-  #     - name: Fix Projects
-  #       shell: powershell
-  #       run: |
-  #         # WARNING: This will need updating if toolset/sdk change in project files!
-  #         gci -recurse -filter "*.vcxproj" | ForEach-Object {
-  #           # Fix SDK and toolset for most samples.
-  #           (Get-Content $_.FullName) -Replace "<PlatformToolset>v110</PlatformToolset>","<PlatformToolset>v142</PlatformToolset>" | Set-Content -Path $_.FullName
-  #           (Get-Content $_.FullName) -Replace "<WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>","<WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>" | Set-Content -Path $_.FullName
-  #           # Fix SDK and toolset for samples that require newer SDK/toolset. At the moment it is only dx12.
-  #           (Get-Content $_.FullName) -Replace "<PlatformToolset>v140</PlatformToolset>","<PlatformToolset>v142</PlatformToolset>" | Set-Content -Path $_.FullName
-  #           (Get-Content $_.FullName) -Replace "<WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>","<WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>" | Set-Content -Path $_.FullName
-  #         }
+    - name: Configure CMake
+      # Use a bash shell so we can use the same syntax for environment variable
+      # access regardless of the host operating system
+      shell: bash
+      working-directory: ${{github.workspace}}/build
+      # Note the current convention is to use the -S and -B options here to specify source 
+      # and build directories, but this is only available with CMake 3.13 and higher.  
+      # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
 
-  #     # Not using matrix here because it would inflate job count too much. Check out and setup is done for every job and that makes build times way too long.
-  #     - name: Build Win32 example_glfw_opengl3
-  #       shell: cmd
-  #       run: '"%MSBUILD_PATH%\MSBuild.exe" nightingale.vcxproj /p:Platform=Win32 /p:Configuration=Release'
-  #       if: github.event_name == 'schedule'
+    - name: Build
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      # Execute the build.  You can specify a specific target with "--target <NAME>"
+      run: cmake --build . --config $BUILD_TYPE
 
-  #     - name: Build x64 example_glfw_opengl3
-  #       shell: cmd
-  #       run: '"%MSBUILD_PATH%\MSBuild.exe" nightingale.vcxproj /p:Platform=x64 /p:Configuration=Release'
+    - name: Check Product
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: |
+        ls -la
+        file slope_defense
+
+    # - name: Test
+    #   working-directory: ${{github.workspace}}/build
+    #   shell: bash
+    #   # Execute tests defined by the CMake configuration.  
+    #   # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+    #   run: ctest -C $BUILD_TYPE
 
   Linux:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       with:
         fetch-depth: 1
 
     - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libglfw3-dev gcc-multilib g++-multilib libfreetype6-dev libxinerama-dev libxcursor-dev
+        sudo apt-get install -y libglfw3-dev gcc-multilib g++-multilib libfreetype6-dev libxinerama-dev libxcursor-dev libxi-dev
 
     - name: Build
       run: |
@@ -88,43 +84,10 @@ jobs:
         name: slope-defense-linux.zip
         path: build/slope-defense-linux.zip
 
-  # Windows-Cross-Compile:
-    # runs-on: ubuntu-18.04
-    # steps:
-    # - uses: actions/checkout@v1
-    #   with:
-    #     fetch-depth: 1
-
-    # - name: Install Dependencies
-    #   run: |
-    #     sudo apt-get update
-    #     sudo apt-get install -y libglfw3-dev gcc-multilib g++-multilib libfreetype6-dev libasound2-dev
-    #     sudo apt-get install gcc-mingw-w64
-    #     sudo apt-get install g++-mingw-w64-x86-64
-
-    # - name: Build
-    #   run: make XCOMPILE=Windows
-
-    # - name: Check Product
-    #   run: |
-    #     ls -l nightingale.exe
-    #     file nightingale.exe
-
-    # - name: Package Product
-    #   run: |
-    #     chmod +x nightingale.exe
-    #     zip -r nightingale-win.zip nightingale.exe fonts
-
-    # - name: Archive Product
-    #   uses: actions/upload-artifact@v1
-    #   with:
-    #     name: nightingale-win.zip
-    #     path: nightingale-win.zip
-
-  MacOS:
+  Mac:
     runs-on: macOS-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
       with:
         fetch-depth: 1
 
@@ -153,14 +116,10 @@ jobs:
         name: slope-defense-mac.zip
         path: build/slope-defense-mac.zip
 
-    # - run: |
-    #     pwd
-    #     ls -la
-
   # Emscripten:
-  #   runs-on: ubuntu-18.04
+  #   runs-on: ubuntu-latest
   #   steps:
-  #   - uses: actions/checkout@v1
+  #   - uses: actions/checkout@v2
   #     with:
   #       fetch-depth: 1
 
