@@ -57,15 +57,17 @@ jobs:
       run: cmake --build .
 
     - name: Check Product
-      working-directory: ${{github.workspace}}/build/${BUILD_TYPE}
+      working-directory: ${{github.workspace}}/build
       shell: bash
       run: |
         ls -la
-        file $EXE
+        ls -la $BUILD_TYPE
+        file $BUILD_TYPE/$EXE
 
     - name: Package Product
-      working-directory: ${{github.workspace}}/build/${BUILD_TYPE}
+      working-directory: ${{github.workspace}}/build
       run: |
+        cd $BUILD_TYPE
         chmod +x $EXE
         tar -cvf slope-defense-$PLAT.tar $EXE
 
