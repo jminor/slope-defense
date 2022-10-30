@@ -31,7 +31,7 @@ jobs:
       working-directory: ${{github.workspace}}/build
       shell: bash
       # Execute the build.  You can specify a specific target with "--target <NAME>"
-      run: cmake --build . --config $BUILD_TYPE
+      run: cmake --build .
 
     - name: Check Product
       working-directory: ${{github.workspace}}/build
@@ -57,7 +57,7 @@ jobs:
     - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libglfw3-dev gcc-multilib g++-multilib libfreetype6-dev libxinerama-dev libxcursor-dev libxi-dev
+        sudo apt-get install -y libglfw3-dev gcc-multilib g++-multilib libfreetype6-dev libxinerama-dev libxcursor-dev libxi-dev libgtk-3-dev
 
     - name: Build
       run: |
