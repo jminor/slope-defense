@@ -23,7 +23,7 @@ jobs:
         - os: windows-latest
           PLAT: windows
           EXE: slope_defense.exe
-          EXE_DIR: ${{github.workspace}}/build/${{ env.BUILD_TYPE }}
+          EXE_DIR: ${{github.workspace}}/build/Debug
         - os: macos-latest
           PLAT: mac
           EXE: slope_defense
