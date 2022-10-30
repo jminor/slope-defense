@@ -61,7 +61,7 @@ jobs:
     - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libglfw3-dev gcc-multilib g++-multilib libfreetype6-dev
+        sudo apt-get install -y libglfw3-dev gcc-multilib g++-multilib libfreetype6-dev libxinerama-dev
 
     - name: Build
       run: |
@@ -74,13 +74,13 @@ jobs:
       run: |
         cd build
         ls -l
-        file slope-defense
+        file slope_defense
 
     - name: Package Product
       run: |
         cd build
-        chmod +x slope-defense
-        zip -r slope-defense-linux.zip slope-defense
+        chmod +x slope_defense
+        zip -r slope-defense-linux.zip slope_defense
 
     - name: Archive Product
       uses: actions/upload-artifact@v1
@@ -128,10 +128,6 @@ jobs:
       with:
         fetch-depth: 1
 
-    # - name: Install Dependencies
-    #   run: |
-    #     brew install glfw
-
     - name: Build
       run: |
         mkdir build
@@ -143,13 +139,13 @@ jobs:
       run: |
         cd build
         ls -l
-        file slope-defense
+        file slope_defense
 
     - name: Package Product
       run: |
         cd build
-        chmod +x slope-defense
-        zip -r slope-defense-mac.zip slope-defense
+        chmod +x slope_defense
+        zip -r slope-defense-mac.zip slope_defense
 
     - name: Archive Product
       uses: actions/upload-artifact@v1
