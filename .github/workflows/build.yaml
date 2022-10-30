@@ -37,7 +37,7 @@ jobs:
       working-directory: ${{github.workspace}}/build
       shell: bash
       run: |
-        ls -la
+        ls -laR
         file slope_defense
 
     # - name: Test
