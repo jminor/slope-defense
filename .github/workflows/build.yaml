@@ -48,7 +48,7 @@ jobs:
       # Note the current convention is to use the -S and -B options here to specify source 
       # and build directories, but this is only available with CMake 3.13 and higher.  
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+      run: cmake ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
 
     - name: Build
       working-directory: ${{github.workspace}}/build
@@ -57,25 +57,23 @@ jobs:
       run: cmake --build .
 
     - name: Check Product
-      working-directory: ${{github.workspace}}/build
+      working-directory: ${{github.workspace}}/build/${{ env.BUILD_TYPE }}
       shell: bash
       run: |
         ls -la
-        ls -la $BUILD_TYPE
-        file $BUILD_TYPE/$EXE
+        file ${{ matrix.EXE }}
 
     - name: Package Product
-      working-directory: ${{github.workspace}}/build
+      working-directory: ${{github.workspace}}/build/${{ env.BUILD_TYPE }}
       run: |
-        cd $BUILD_TYPE
-        chmod +x $EXE
-        tar -cvf slope-defense-$PLAT.tar $EXE
+        chmod +x ${{ matrix.EXE }}
+        tar -cvf slope-defense-${{ matrix.PLAT }}.tar ${{ matrix.EXE }}
 
     - name: Archive Product
       uses: actions/upload-artifact@v3
       with:
-        name: slope-defense-$PLAT
-        path: build/$BUILD_TYPE/slope-defense-$PLAT.tar
+        name: slope-defense-${{ matrix.PLAT }}
+        path: build/$${{ env.BUILD_TYPE }}/slope-defense-${{ matrix.PLAT }}.tar
         if-no-files-found: error
 
 
