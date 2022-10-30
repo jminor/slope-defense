@@ -9,6 +9,10 @@ set(CMAKE_OSX_ARCHITECTURES arm64;x86_64)
 
 project(slope_defense VERSION 0.1.0)
 
+if(WIN32)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+endif(WIN32)
+
 include(FetchContent) 
 FetchContent_Declare(mahi-gui GIT_REPOSITORY https://github.com/mahilab/mahi-gui.git) 
 FetchContent_MakeAvailable(mahi-gui)
