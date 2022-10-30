@@ -8,8 +8,6 @@
 
 #include <exprtk.hpp>
 
-#include <stdlib.h>
-
 
 using namespace mahi::gui;
 using namespace mahi::util;
@@ -20,9 +18,6 @@ typedef exprtk::symbol_table<value_t> symbol_table_t;
 typedef exprtk::expression<value_t>   expression_t;
 typedef exprtk::parser<value_t>       parser_t;
 
-float random(float low, float high) {
-    return drand48() * (high - low) + low;
-}
 
 struct Thing {
     ImVec2 pos;
@@ -121,11 +116,15 @@ public:
     void start_wave() {
         for (int i=0; i<gameState.wave * 2 + 5; i++) {
             Thing t;
-            t.pos = ImVec2(random(gameState.plot_min, gameState.plot_max),
-                           random(gameState.plot_min, gameState.plot_max));
-            t.vel = ImVec2(random(-1, 1), random(-1, 1));
+            t.pos = ImVec2(random_range(gameState.plot_min, gameState.plot_max),
+                           random_range(gameState.plot_min, gameState.plot_max));
+            t.vel = ImVec2(random_range(-1.0, 1.0),
+                           random_range(-1.0, 1.0));
             t.radius = (gameState.plot_max - gameState.plot_min) / 100.0;
-            t.color = ImColor(random(0,1), random(0,1), random(0,1), 1.0);
+            t.color = ImColor(random_range(0.2, 1.0),
+                              random_range(0.2, 1.0),
+                              random_range(0.2, 1.0),
+                              1.0f);
             t.pop_counter = 0;
             gameState.things.push_back(t);
         }
