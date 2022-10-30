@@ -3,6 +3,7 @@
 #include <Mahi/Util.hpp>
 
 #include <imgui_internal.h>
+#include <implot_internal.h>
 
 #include <exprtk.hpp>
 
@@ -23,6 +24,7 @@ struct Thing {
     ImVec2 pos;
     ImVec2 vel;
     float radius;
+    float distance;
     ImColor color;
     float pop_counter;
 };
@@ -33,10 +35,14 @@ public:
     struct GameState {
         int score;
         float difficulty = 0;
+        float grace_factor = 1.2;
         int wave;
         vector<Thing> things;
         string formula = "x";
         float firing_counter;
+        bool allow_dragging = false;
+        value_t plot_min;
+        value_t plot_max;
     } gameState;
 
 
@@ -49,6 +55,8 @@ public:
         gameState.wave = 1;
         gameState.things.clear();
         gameState.firing_counter = 0;
+        gameState.plot_min = -10;
+        gameState.plot_max = 10;
         start_wave();
     }
 
@@ -81,21 +89,24 @@ public:
         if (is_valid) {
             val_t = time().as_seconds();
             for (int i=0; i<num_pts; i++) {
-                val_x = i/(value_t)(num_pts-1) * 200.0 - 100.0;
+                val_x = i/(value_t)(num_pts-1) * (gameState.plot_max - gameState.plot_min) + gameState.plot_min;
                 pts[i].x = val_x;
                 pts[i].y = expression.value();
             }
 
             // check for collisions
-            if (gameState.firing_counter > 0) {
-                for (auto& t : gameState.things) {
-                    // already popping?
-                    if (t.pop_counter > 0) continue;
+            for (auto& t : gameState.things) {
 
-                    val_x = t.pos.x;
-                    value_t val_y = expression.value();
+                val_x = t.pos.x;
+                value_t val_y = expression.value();
 
-                    if (abs(val_y - t.pos.y) < t.radius / 2) {
+                t.distance = abs(val_y - t.pos.y);
+
+                // already popping?
+                if (t.pop_counter > 0) continue;
+
+                if (gameState.firing_counter > 0) {
+                    if (t.distance < t.radius * gameState.grace_factor) {
                         t.pop_counter = 0.3;
                     }
                 }
@@ -106,9 +117,10 @@ public:
     void start_wave() {
         for (int i=0; i<gameState.wave * 2 + 5; i++) {
             Thing t;
-            t.pos = ImVec2(random(-100, 100), random(-100, 100));
+            t.pos = ImVec2(random(gameState.plot_min, gameState.plot_max),
+                           random(gameState.plot_min, gameState.plot_max));
             t.vel = ImVec2(random(-1, 1), random(-1, 1));
-            t.radius = 5;
+            t.radius = (gameState.plot_max - gameState.plot_min) / 100.0;
             t.color = ImColor(random(0,1), random(0,1), random(0,1), 1.0);
             t.pop_counter = 0;
             gameState.things.push_back(t);
@@ -128,7 +140,7 @@ public:
                     continue;
                 }
 
-                it->radius += 30.0 * dt;
+                it->radius *= 1.1;
                 it->color = ImColor(1.0f, 1.0f, 1.0f, 10*ImSaturate(it->pop_counter));
             }
 
@@ -136,10 +148,11 @@ public:
             it->pos.y += it->vel.y * dt * gameState.difficulty;
 
             // wrap
-            if (it->pos.x < -100) it->pos.x += 200;
-            if (it->pos.y < -100) it->pos.y += 200;
-            if (it->pos.x > 100) it->pos.x -= 200;
-            if (it->pos.y > 100) it->pos.y -= 200;
+            const value_t plot_size = gameState.plot_max - gameState.plot_min;
+            if (it->pos.x < gameState.plot_min) it->pos.x += plot_size;
+            if (it->pos.y < gameState.plot_min) it->pos.y += plot_size;
+            if (it->pos.x > gameState.plot_max) it->pos.x -= plot_size;
+            if (it->pos.y > gameState.plot_max) it->pos.y -= plot_size;
 
             ++it;
         }
@@ -185,6 +198,96 @@ public:
         set_focus = true;
     }
 
+    void game_grid(ImVec2 grid_size) {
+
+        ImPlot::SetNextPlotLimits(gameState.plot_min, gameState.plot_max,
+                                  gameState.plot_min, gameState.plot_max);
+        ImPlot::BeginPlot("Game Grid", "x", "y", grid_size,
+                          0,
+                          ImPlotAxisFlags_Lock,
+                          ImPlotAxisFlags_Lock);
+
+        const ImVec4 line_normal_color = (ImVec4)ImColor(0.3f, 0.3f, 0.8f, 1.0f);
+        const ImVec4 line_firing_color = (ImVec4)ImColor(1.0f, 0.7f, 0.1f, 1.0f);
+        ImVec4 line_color = ImLerp(line_normal_color,
+                                   line_firing_color,
+                                   ImSaturate(gameState.firing_counter));
+        float line_weight = ImLerp(1.0f, 5.0f, ImSaturate(gameState.firing_counter));
+
+        if (is_valid) {
+            ImPlot::SetNextLineStyle(line_color, line_weight);
+            ImPlot::PlotLine("", &pts[0].x, &pts[0].y, num_pts, 0, sizeof(ImPlotPoint));
+        }
+
+        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
+        for (int i=0; i<gameState.things.size(); i++) {
+            auto& thing = gameState.things[i];
+            auto x_scale = ImPlot::GetCurrentContext()->Mx;
+            double pixel_radius = thing.radius * x_scale;
+            char name[100];
+            snprintf(name, sizeof(name), "P%d", i);
+            double x = thing.pos.x;
+            double y = thing.pos.y;
+            value_t plot_height = gameState.plot_max - gameState.plot_min;
+            if (ImPlot::DragPoint(name, &x, &y, true, thing.color, pixel_radius)) {
+                if (gameState.allow_dragging) {
+                    thing.pos.x = x;
+                    thing.pos.y = y;
+                }
+            }
+        }
+
+        ImPlot::EndPlot();
+    }
+
+    void controls() {
+        ImGui::BeginGroup();
+
+        ImGui::Text("Formula");
+
+        ImGui::Text("y = ");
+        ImGui::SameLine();
+        char buf[1000];
+        snprintf(buf, sizeof(buf), "%s", gameState.formula.c_str());
+        if (set_focus) {
+            ImGui::SetKeyboardFocusHere();
+            set_focus = false;
+        }
+        if (ImGui::InputText("##Formula", buf, sizeof(buf), ImGuiInputTextFlags_CallbackCompletion, MyCallback, this)) {
+            gameState.formula = string(buf);
+        }
+        ImGui::SetItemDefaultFocus();
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+//            fire();
+        }
+
+        ImGui::TextDisabled(is_valid ? "" : "Invalid formula.");
+
+        ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(255,150,0,255));
+        if (ImGui::Button("Activate!", ImVec2(ImGui::GetContentRegionAvailWidth(),0))) {
+            fire();
+        }
+        ImGui::PopStyleColor();
+        ImGui::TextDisabled("Click or press Tab");
+
+        ImGui::TextUnformatted("");  // spacer
+
+        ImGui::Text("Wave");
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvailWidth());
+        if (ImGui::InputInt("##Wave", &gameState.wave)) {
+            gameState.wave = max(1, gameState.wave);
+            start_wave();
+        }
+
+        ImGui::Text("Difficulty");
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvailWidth());
+        if (ImGui::DragFloat("##Difficulty", &gameState.difficulty, 0.01, 0, 10)) {
+            ;
+        }
+
+        ImGui::EndGroup();
+    }
+
     void game_window() {
         auto viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->GetWorkPos());
@@ -199,105 +302,16 @@ public:
 
         main_menu();
 
-        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvailWidth()-500);
-        ImGui::BeginGroup();
-        {
-
-            ImGui::Text("Formula");
-            ImGui::Text("y = ");
-            ImGui::SameLine();
-            char buf[1000];
-            snprintf(buf, sizeof(buf), "%s", gameState.formula.c_str());
-            if (set_focus) {
-                ImGui::SetKeyboardFocusHere();
-                set_focus = false;
-            }
-            if (ImGui::InputText("##Formula", buf, sizeof(buf), ImGuiInputTextFlags_CallbackCompletion, MyCallback, this)) {
-                gameState.formula = string(buf);
-            }
-            ImGui::SetItemDefaultFocus();
-            if (ImGui::IsItemDeactivatedAfterEdit()) {
-                fire();
-            }
-        }
-        ImGui::EndGroup();
-
-        ImGui::SameLine();
-
-        ImGui::BeginGroup();
-        {
-            ImGui::Text(" ");
-            ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(255,150,0,255));
-            if (ImGui::Button("Activate!")) {
-                fire();
-            }
-            ImGui::PopStyleColor();
-        }
-        ImGui::EndGroup();
-
-        ImGui::SameLine();
-        ImGui::Dummy(ImVec2(50,0));
-        ImGui::SameLine();
-
-        ImGui::BeginGroup();
-        {
-            ImGui::Text("Wave");
-            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvailWidth()/2.0);
-            if (ImGui::InputInt("##Wave", &gameState.wave)) {
-                gameState.wave = max(1, gameState.wave);
-                start_wave();
-            }
-        }
-        ImGui::EndGroup();
-
-        ImGui::SameLine();
-
-        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvailWidth());
-        ImGui::BeginGroup();
-        {
-            ImGui::Text("Difficulty");
-            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvailWidth());
-            if (ImGui::DragFloat("##Difficulty", &gameState.difficulty, 0.01, 0, 10)) {
-//                gameState.wave = max(1, gameState.wave);
-//                start_wave();
-            }
-        }
-        ImGui::EndGroup();
-
         ImVec2 avail = ImGui::GetContentRegionAvail();
         float size = fminf(avail.x, avail.y);
         ImVec2 grid_size(size, size);
 
-        ImPlot::SetNextPlotLimits(-100, 100, -100, 100);
-        ImPlot::BeginPlot("Game Grid", "x", "y", grid_size,
-                          0,
-                          ImPlotAxisFlags_Lock,
-                          ImPlotAxisFlags_Lock);
+        game_grid(grid_size);
 
-        const ImVec4 line_normal_color = (ImVec4)ImColor(0.3f, 0.3f, 0.8f, 1.0f);
-        const ImVec4 line_firing_color = (ImVec4)ImColor(1.0f, 0.7f, 0.1f, 1.0f);
-        ImVec4 line_color = ImLerp(line_normal_color,
-                                   line_firing_color,
-                                   ImSaturate(gameState.firing_counter));
-        float line_weight = ImLerp(1.0f, 5.0f, ImSaturate(gameState.firing_counter));
+        ImGui::SameLine();
 
-        ImPlot::SetNextLineStyle(line_color, line_weight);
-        ImPlot::PlotLine("", &pts[0].x, &pts[0].y, num_pts, 0, sizeof(ImPlotPoint));
-        ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
-
-        for (int i=0; i<gameState.things.size(); i++) {
-            auto& thing = gameState.things[i];
-            char name[100];
-            snprintf(name, sizeof(name), "P%d", i);
-            double x = thing.pos.x;
-            double y = thing.pos.y;
-            if (ImPlot::DragPoint(name, &x, &y, true, thing.color, thing.radius)) {
-//                thing.pos.x = x;
-//                thing.pos.y = y;
-            }
-        }
-
-        ImPlot::EndPlot();
+        //        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvailWidth()-500);
+        controls();
 
         ImGui::End();
     }
