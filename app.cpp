@@ -1,4 +1,5 @@
-// my_app.cpp
+// Slope Defense - app.cpp
+
 #include <Mahi/Gui.hpp>
 #include <Mahi/Util.hpp>
 
@@ -6,6 +7,9 @@
 #include <implot_internal.h>
 
 #include <exprtk.hpp>
+
+#include <stdlib.h>
+
 
 using namespace mahi::gui;
 using namespace mahi::util;
