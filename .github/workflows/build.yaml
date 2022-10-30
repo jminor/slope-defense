@@ -64,15 +64,21 @@ jobs:
         sudo apt-get install -y libglfw3-dev gcc-multilib g++-multilib libfreetype6-dev
 
     - name: Build
-      run: make
+      run: |
+        mkdir build
+        cd build
+        cmake ..
+        make
 
     - name: Check Product
       run: |
+        cd build
         ls -l
         file slope-defense
 
     - name: Package Product
       run: |
+        cd build
         chmod +x slope-defense
         zip -r slope-defense-linux.zip slope-defense
 
@@ -80,7 +86,7 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: slope-defense-linux.zip
-        path: slope-defense-linux.zip
+        path: build/slope-defense-linux.zip
 
   # Windows-Cross-Compile:
     # runs-on: ubuntu-18.04
@@ -122,9 +128,9 @@ jobs:
       with:
         fetch-depth: 1
 
-    - name: Install Dependencies
-      run: |
-        brew install glfw3
+    # - name: Install Dependencies
+    #   run: |
+    #     brew install glfw
 
     - name: Build
       run: |
@@ -135,11 +141,13 @@ jobs:
 
     - name: Check Product
       run: |
+        cd build
         ls -l
         file slope-defense
 
     - name: Package Product
       run: |
+        cd build
         chmod +x slope-defense
         zip -r slope-defense-mac.zip slope-defense
 
@@ -147,7 +155,7 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: slope-defense-mac.zip
-        path: slope-defense-mac.zip
+        path: build/slope-defense-mac.zip
 
     # - run: |
     #     pwd
