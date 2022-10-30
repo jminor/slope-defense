@@ -54,7 +54,7 @@ jobs:
       working-directory: ${{github.workspace}}/build
       shell: bash
       # Execute the build.  You can specify a specific target with "--target <NAME>"
-      run: cmake --build .
+      run: cmake --build . -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
     - name: Check Product
       working-directory: ${{github.workspace}}/build
