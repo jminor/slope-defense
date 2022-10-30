@@ -19,15 +19,15 @@ jobs:
         - os: ubuntu-latest
           PLAT: linux
           EXE: slope_defense
-          EXE_DIR: ${{github.workspace}}/build
+          EXE_DIR: build
         - os: windows-latest
           PLAT: windows
           EXE: slope_defense.exe
-          EXE_DIR: ${{github.workspace}}/build/Debug
+          EXE_DIR: build/Debug
         - os: macos-latest
           PLAT: mac
           EXE: slope_defense
-          EXE_DIR: ${{github.workspace}}/build
+          EXE_DIR: build
 
     steps:
     - uses: actions/checkout@v2
@@ -61,14 +61,14 @@ jobs:
       run: cmake --build .
 
     - name: Check Product
-      working-directory: ${{ matrix.EXE_DIR }}
+      working-directory: ${{github.workspace}}/${{ matrix.EXE_DIR }}
       shell: bash
       run: |
         ls -la
         file ${{ matrix.EXE }}
 
     - name: Package Product
-      working-directory: ${{ matrix.EXE_DIR }}
+      working-directory: ${{github.workspace}}/${{ matrix.EXE_DIR }}
       shell: bash
       run: |
         chmod +x ${{ matrix.EXE }}
