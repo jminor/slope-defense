@@ -5,6 +5,8 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0048 NEW)
 endif(COMMAND cmake_policy)
 
+set(CMAKE_OSX_ARCHITECTURES arm64;x86_64)
+
 project(slope_defense VERSION 0.1.0)
 
 include(FetchContent) 
