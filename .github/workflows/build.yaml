@@ -38,6 +38,7 @@ jobs:
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory
       # We'll use this as our working directory for all subsequent commands
+      shell: bash
       run: cmake -E make_directory ${{github.workspace}}/build
 
     - name: Configure CMake
@@ -65,15 +66,17 @@ jobs:
 
     - name: Package Product
       working-directory: ${{github.workspace}}/build/${{ env.BUILD_TYPE }}
+      shell: bash
       run: |
         chmod +x ${{ matrix.EXE }}
         tar -cvf slope-defense-${{ matrix.PLAT }}.tar ${{ matrix.EXE }}
+        ls -la
 
     - name: Archive Product
       uses: actions/upload-artifact@v3
       with:
         name: slope-defense-${{ matrix.PLAT }}
-        path: build/$${{ env.BUILD_TYPE }}/slope-defense-${{ matrix.PLAT }}.tar
+        path: build/${{ env.BUILD_TYPE }}/slope-defense-${{ matrix.PLAT }}.tar
         if-no-files-found: error
 
 
