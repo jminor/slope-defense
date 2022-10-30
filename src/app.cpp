@@ -191,6 +191,7 @@ public:
             MyApp* app = (MyApp*)data->UserData;
             app->fire();
         }
+        return 0;
     }
 
     void fire() {
