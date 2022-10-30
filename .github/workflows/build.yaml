@@ -19,12 +19,15 @@ jobs:
         - os: ubuntu-latest
           PLAT: linux
           EXE: slope_defense
+          EXE_DIR: ${{github.workspace}}/build
         - os: windows-latest
           PLAT: windows
           EXE: slope_defense.exe
+          EXE_DIR: ${{github.workspace}}/build/${{ env.BUILD_TYPE }}
         - os: macos-latest
           PLAT: mac
           EXE: slope_defense
+          EXE_DIR: ${{github.workspace}}/build
 
     steps:
     - uses: actions/checkout@v2
@@ -58,14 +61,14 @@ jobs:
       run: cmake --build .
 
     - name: Check Product
-      working-directory: ${{github.workspace}}/build/${{ env.BUILD_TYPE }}
+      working-directory: ${{ matrix.EXE_DIR }}
       shell: bash
       run: |
         ls -la
         file ${{ matrix.EXE }}
 
     - name: Package Product
-      working-directory: ${{github.workspace}}/build/${{ env.BUILD_TYPE }}
+      working-directory: ${{ matrix.EXE_DIR }}
       shell: bash
       run: |
         chmod +x ${{ matrix.EXE }}
@@ -76,7 +79,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: slope-defense-${{ matrix.PLAT }}
-        path: build/${{ env.BUILD_TYPE }}/slope-defense-${{ matrix.PLAT }}.tar
+        path: ${{ matrix.EXE_DIR }}/slope-defense-${{ matrix.PLAT }}.tar
         if-no-files-found: error
 
 
