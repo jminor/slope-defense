@@ -44,13 +44,13 @@ jobs:
       working-directory: ${{github.workspace}}/build/Debug
       run: |
         chmod +x slope_defense.exe
-        zip -r slope-defense-windows.zip slope_defense.exe
+        tar -cvf slope-defense-windows.tar slope_defense.exe
 
     - name: Archive Product
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v3
       with:
-        name: slope-defense-windows.zip
-        path: build/Debug/slope-defense-windows.zip
+        name: slope-defense-windows
+        path: build/Debug/slope-defense-windows.tar
 
   Linux:
     runs-on: ubuntu-latest
@@ -81,13 +81,13 @@ jobs:
       run: |
         cd build
         chmod +x slope_defense
-        zip -r slope-defense-linux.zip slope_defense
+        tar -cvf slope-defense-linux.tar slope_defense
 
     - name: Archive Product
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v3
       with:
-        name: slope-defense-linux.zip
-        path: build/slope-defense-linux.zip
+        name: slope-defense-linux
+        path: build/slope-defense-linux.tar
 
   Mac:
     runs-on: macOS-latest
@@ -113,13 +113,13 @@ jobs:
       run: |
         cd build
         chmod +x slope_defense
-        zip -r slope-defense-mac.zip slope_defense
+        tar -cvf slope-defense-mac.tar slope_defense
 
     - name: Archive Product
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v3
       with:
-        name: slope-defense-mac.zip
-        path: build/slope-defense-mac.zip
+        name: slope-defense-mac
+        path: build/slope-defense-mac.tar
 
   # Emscripten:
   #   runs-on: ubuntu-latest
