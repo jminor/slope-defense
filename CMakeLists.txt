@@ -1,36 +1,62 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.0)
+project(slope_defense)
 
-if(COMMAND cmake_policy)
-  cmake_policy(SET CMP0003 NEW)
-  cmake_policy(SET CMP0048 NEW)
-endif(COMMAND cmake_policy)
+option(USE_FILE_SYSTEM "Enable using the filesystem" ON)
 
-set(CMAKE_OSX_ARCHITECTURES arm64;x86_64)
+set(PROJ_SRCS
+    main.cpp
+    app.cpp
+    )
 
-project(slope_defense VERSION 0.1.0)
+set(IMGUI_DIR libs/imgui)
 
-add_compile_options(-pthread)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+set(IMGUI_SRCS
+    ${IMGUI_DIR}/imgui.cpp
+    ${IMGUI_DIR}/imgui_demo.cpp
+    ${IMGUI_DIR}/imgui_draw.cpp
+    ${IMGUI_DIR}/imgui_tables.cpp
+    ${IMGUI_DIR}/imgui_widgets.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_sdl.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
+    )
 
-if(WIN32)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
-endif(WIN32)
+set(IMPLOT_DIR libs/implot)
 
-if(EMSCRIPTEN)
-  add_compile_options(
-    -sALLOW_MEMORY_GROWTH=1 -sPTHREAD_POOL_SIZE=10 -sPTHREAD_POOL_SIZE_STRICT=0
-    -sUSE_PTHREADS=1 -sEXIT_RUNTIME=1)
-endif(EMSCRIPTEN)
+set(IMPLOT_SRCS
+    ${IMPLOT_DIR}/implot.cpp
+    ${IMPLOT_DIR}/implot_demo.cpp
+    ${IMPLOT_DIR}/implot_items.cpp
+    )
 
-include(FetchContent) 
-FetchContent_Declare(mahi-gui GIT_REPOSITORY https://github.com/mahilab/mahi-gui.git) 
-FetchContent_MakeAvailable(mahi-gui)
+set(INCS
+    ${CMAKE_CURRENT_LIST_DIR}
+    ${IMGUI_DIR}
+    ${IMGUI_DIR}/backends
+    ${IMPLOT_DIR}
+    libs/exprtk
+    )
 
-FetchContent_Declare(exprtk GIT_REPOSITORY https://github.com/ArashPartow/exprtk.git)
-FetchContent_MakeAvailable(exprtk)
+set(LIBS ${CMAKE_DL_LIBS} SDL2)
 
-add_executable(slope_defense "app.cpp")
-target_link_libraries(slope_defense mahi::gui)
-target_include_directories(slope_defense PRIVATE ${exprtk_SOURCE_DIR})
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2 -s WASM=1 -s DISABLE_EXCEPTION_CATCHING=1 -s NO_EXIT_RUNTIME=0 -s ASSERTIONS=1")
 
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s USE_PTHREADS=1 -s ALLOW_MEMORY_GROWTH=1 -Wl,--shared-memory,--no-check-features --shell-file ${CMAKE_CURRENT_LIST_DIR}/shell_minimal.html")
+
+if(USE_FILE_SYSTEM)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --no-heap-copy --preload-file ${CMAKE_CURRENT_LIST_DIR}/fonts@/fonts")
+else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s NO_FILESYSTEM=1 -DIMGUI_DISABLE_FILE_FUNCTIONS")
+endif()
+
+add_executable(${PROJECT_NAME}
+    ${PROJ_SRCS}
+    ${IMGUI_SRCS}
+    ${IMPLOT_SRCS}
+    )
+
+set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX .html)
+
+target_include_directories(${PROJECT_NAME} PUBLIC ${INCS})
+
+target_link_libraries(${PROJECT_NAME} PUBLIC ${LIBS})
 
